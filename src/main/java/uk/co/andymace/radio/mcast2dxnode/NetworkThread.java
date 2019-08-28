@@ -1,4 +1,4 @@
-package uk.co.andymace.radio.mcast2dxcnode;
+package uk.co.andymace.radio.mcast2dxnode;
 
 import java.io.IOException;
 import java.net.DatagramPacket;

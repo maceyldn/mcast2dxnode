@@ -6,7 +6,7 @@
 		<Console name="Console" target="SYSTEM_OUT">
 			<PatternLayout pattern="%d [%t] [%C{1}] %-5p: %m%n" />
 		</Console>
-		<File name="Logfile" fileName="c:\dev\dxc2mcast.log" immediateFlush="false" append="false">
+		<File name="Logfile" fileName="c:\dev\mcast2dxnode.log" immediateFlush="false" append="false">
             <PatternLayout pattern="%d [%t] [%C{1}] %-5p: %m%n"/>
         </File>
  		 

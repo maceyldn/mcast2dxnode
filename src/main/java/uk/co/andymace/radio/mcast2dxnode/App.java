@@ -1,4 +1,4 @@
-package uk.co.andymace.radio.mcast2dxcnode;
+package uk.co.andymace.radio.mcast2dxnode;
 
 import java.net.InetAddress;
 import java.util.ArrayList;
