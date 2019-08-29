@@ -53,10 +53,12 @@ public class App {
 		InetAddress multicastAddress = InetAddress.getByName(appProperties.getProperty("multicastaddress"));
 		InetAddress sourceAddress = InetAddress.getByName(appProperties.getProperty("sourceaddress"));
 		
-		//DXServer dxc = new DXServer(appProperties.getProperty("clusterlsnaddress"), appProperties.getIntProperty("clusterlsnport"));
+		DXSpiderThreadController dxc = new DXSpiderThreadController(appProperties);
+		dxc.startUpListener();
+		
 		MulticastLsnThread mcast = new MulticastLsnThread(multicastAddress, multicastPort, sourceAddress);
 		mcast.startUpListener();
-		
+		mcast.addListener(dxc);
 		
 		
 		//logger.info("Setting up DXNode");
