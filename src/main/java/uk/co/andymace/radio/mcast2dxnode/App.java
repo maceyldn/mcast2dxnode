@@ -39,7 +39,7 @@ public class App {
 		
 		SingleCommand.singleCommand(App.class).parse(args);
     	
-    	ArrayList<String> requiredProperties = new ArrayList<String>(Arrays.asList("appName", "sourceaddress", "multicastaddress", "multicastport", "clusterlsnaddress", "clusterlsnport"));
+    	ArrayList<String> requiredProperties = new ArrayList<String>(Arrays.asList("appName", "sourceaddress", "multicastaddress", "multicastport", "clusterlsmycall", "clusterlsnaddress", "clusterlsnport"));
     	appProperties = new myProperties(configFilename, requiredProperties);
 
     	logger.info("App Name is : ["+ appProperties.getProperty("appName") +"]");

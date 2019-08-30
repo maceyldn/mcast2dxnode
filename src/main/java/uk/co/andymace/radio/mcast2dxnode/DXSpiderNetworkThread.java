@@ -3,13 +3,15 @@ package uk.co.andymace.radio.mcast2dxnode;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Arrays;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+
+import com.google.common.base.Charsets;
 
 public class DXSpiderNetworkThread implements Runnable {
 
@@ -23,6 +25,10 @@ public class DXSpiderNetworkThread implements Runnable {
 	private ServerSocket serverSocket;
 	private BufferedOutputStream out;
 	private BufferedInputStream in;
+
+	public PCSTATE state;
+
+	private String mycall;
 	
 	public DXSpiderNetworkThread (myProperties properties, DXSpiderThreadController controller) 
 	{
@@ -31,7 +37,7 @@ public class DXSpiderNetworkThread implements Runnable {
 		this.controller = controller;
 		this.localIPAddress = properties.getProperty("clusterlsnaddress");
 		this.port = properties.getIntProperty("clusterlsnport");
-		
+		this.mycall = properties.getProperty("clusterlsmycall");
 		if (alreadyInstantiated == true) 
 		{ 
 			Logger.error("Looks like you're trying to spin up two DXSpider threads. Not good. Exiting.");
@@ -43,7 +49,7 @@ public class DXSpiderNetworkThread implements Runnable {
 	
 	@Override
 	public void run() {
-		Logger.info("Spinning up enCC Thread.");
+		Logger.info("Spinning up DXSpider Thread.");
 		
 		while(true) {
 			try {
@@ -61,37 +67,50 @@ public class DXSpiderNetworkThread implements Runnable {
 				
 				Logger.debug("Sending out to controller. Out is: "+ out.toString());
 				this.controller.setNetworkOutputStream(out);
-//				
 
+				state = PCSTATE.connected;
+				
 				//Now that we're set up, send the welcome message...
-				Logger.info("nCC System has connected: [" + clientSocket.getInetAddress().toString() + "]");
-				//Logger.info("Start HeartBeating...");
+				Logger.info("Client has connected: [" + clientSocket.getInetAddress().toString() + "]");
 				
-				
-				
+				out.write("login:".getBytes(Charsets.UTF_8));
+				out.flush();
 				
 				byte[] inputData = new byte[5000];
+				String send;
 				
-				//Thread.sleep(300);
+				inputData = new byte[5000];
+	            int len = in.read(inputData);
+	     
+	            String callsign = new String(Arrays.copyOf(inputData, len-1), "UTF-8");
+	            String[] callsigns = callsign.split("\\r");
+				
+	            Logger.info("Callsign given: " + callsigns[0]);
+	            Logger.info("Lets talk DXSpider PC");
+				
+	            send = "PC18^mcast2dxc githash^1^";
+	            sendData(send);
+		        
+	            
+	            //Thread.sleep(300);
 				while(true)
 				{
-					
-
-					while(in.available()>0)
+				    while(in.available()>0)
 			        {
-						inputData = new byte[5000];
-			            // read the byte and convert the integer to character
-			            int len = in.read(inputData);
-			           
-			            //TODO: This needs to be done properly....  Not sure how but needs to take byte[] and work out what it is e.t.c
-			            //ConnectionStatusMessage message = new ConnectionStatusMessage(inputData, len);
-			            
-			            //Logger.info("Recieved Heartbeat: " + message);
-			            this.controller.startHeartbeatThread();
+						len = in.read(inputData);
+						
+						String incoming = new String(Arrays.copyOf(inputData, len));
+				    	//Split return up by \n linebreaks.. sometimes multiples are sent
+						String[] pccommands = incoming.split("\\r\\n");
+						
+						for (String s : pccommands)
+						{
+							//Process Each in turn
+							Logger.debug("RCV: " + s);
+							ProcessCommand(s);	
+						}
+						
 			        }
-					
-				
-				//Logger.debug("Session Complete. Looping back to wait for more data");
 				}
 				
 				
@@ -107,6 +126,57 @@ public class DXSpiderNetworkThread implements Runnable {
 			
 		}
 
+	}
+
+
+	private void ProcessCommand(String s) {
+		String pc = s.substring(0, 4);
+		switch (pc)
+		{
+			case "PC19":
+				Logger.debug("Seen PC19 ignore");
+				Logger.info("Seen Init from Client");
+				break;
+			case "PC20":
+				Logger.debug("Seen PC20, Start My Init");
+				sendData("PC19^1^"+mycall+"^0^5457^H15^");
+				sendData("PC22^");
+				state = PCSTATE.initcomplete;
+				Logger.info("Full Init Complete");
+				break;
+			case "PC51":
+					process_ping_request(s);
+					break;
+		    default:
+		    	break;
+		}
+	}
+
+
+	private void process_ping_request(String str) {
+			String[] s = str.split("\\^");
+			
+			String opcode = s[0], tocluster = s[1], fromcluster = s[2];
+			int pingflag = Integer.parseInt(s[3]);
+			
+			Logger.info("HEARTBEAT " + s[2]);
+			pingflag ^= 1;
+			String pc51 = "PC51^"+fromcluster+"^"+tocluster+"^"+pingflag+"^~";
+			sendData(pc51);
+		}
+
+
+	private void sendData(String send) {
+		
+        try {
+        	Logger.debug("SEND: " + send);
+			out.write((send+"\n").getBytes(Charsets.UTF_8));
+			out.flush();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
 	}
 	
 	

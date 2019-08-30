@@ -1,6 +1,6 @@
 package uk.co.andymace.radio.mcast2dxnode;
 
-public interface ScheduledEventFiredListener {
+public interface NewSpotListener {
 
 	public void newEventFired(String message);
 	

@@ -5,6 +5,8 @@ import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.net.NetworkInterface;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -19,6 +21,7 @@ public class NetworkThread implements Runnable
 	private MulticastSocket socket;
 	protected byte[] buf = new byte[6144];
 	private InetAddress group;
+	private List<NewSpotListener> listeners = new ArrayList<NewSpotListener>();
 	
 		
 	public NetworkThread (InetAddress multicastAddress, int multicastPort, InetAddress sourceip )
@@ -58,9 +61,6 @@ public class NetworkThread implements Runnable
 	}
 	
 	
-	/**
-	 *  Will listen and wait for connections from potential Subscribers to register.
-	 */
 	private void listenformulticastpackets()
 	{
 		try 
@@ -68,7 +68,8 @@ public class NetworkThread implements Runnable
 			  DatagramPacket packet = new DatagramPacket(buf, buf.length);
 	            socket.receive(packet);
 	            String received = new String(packet.getData(), 0, packet.getLength());
- 	           logger.info(received);
+	            notifyListeners(received);
+ 	           //logger.info(received);
  	           
 
 		} catch (IOException e) {
@@ -95,6 +96,16 @@ public class NetworkThread implements Runnable
 	    
 		
 	}
+	
+	private void notifyListeners(String pcstring) {
+        for (NewSpotListener listener : listeners) {
+            listener.newEventFired(pcstring);
+        }
+    }
+
+    public void addListener(NewSpotListener newListener) {
+        listeners.add(newListener);
+    }
 
 
 	

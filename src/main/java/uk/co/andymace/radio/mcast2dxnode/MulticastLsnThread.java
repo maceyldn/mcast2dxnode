@@ -1,15 +1,19 @@
 package uk.co.andymace.radio.mcast2dxnode;
 
 import java.net.InetAddress;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class MulticastLsnThread {
+public class MulticastLsnThread implements NewSpotListener {
 
 	private static boolean alreadyInstantiated = false;
 
 	private Thread listenerThread;
+
+	private List<NewSpotListener> listeners = new ArrayList<NewSpotListener>();
 	private static final Logger Logger = LogManager.getLogger(MulticastLsnThread.class.getName());
 
 	public MulticastLsnThread(InetAddress multicastAddress, int multicastPort, InetAddress sourceip) {
@@ -27,6 +31,7 @@ public class MulticastLsnThread {
 		alreadyInstantiated = true;
 				
 		NetworkThread networkThread = new NetworkThread(multicastAddress, multicastPort, sourceip);		
+		networkThread.addListener(this);
 		listenerThread = new Thread(networkThread);
 
 	}
@@ -46,4 +51,19 @@ public class MulticastLsnThread {
 		
 	}
 
+	private void notifyListeners(String pcstring) {
+        for (NewSpotListener listener : listeners) {
+            listener.newEventFired(pcstring);
+        }
+    }
+
+    public void addListener(NewSpotListener newListener) {
+        listeners.add(newListener);
+    }
+    
+	@Override
+	public void newEventFired(String message) {
+		notifyListeners(message);
+		
+	}
 }
